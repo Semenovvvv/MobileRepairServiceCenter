@@ -1,0 +1,96 @@
+﻿@page "/price"
+
+@using MobileRepair.Data.Models
+
+<div class="service-container">
+    <table class="service-table">
+        <thead>
+            <tr>
+                <th>Услуга</th>
+                <th>Описание</th>
+                <th>Время</th>
+                <th>Стоимость</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var service in services)
+            {
+                <tr>
+                    <td>@service.Name</td>
+                    <td>@service.Description</td>
+                    <td>@service.BaseDuration</td>
+                    <td>
+                        @if (service.BasePrice == 0)
+                        {
+                            <span class="free-price">Бесплатно</span>
+                        }
+                        else
+                        {
+                            @($"{service.BasePrice:C}")
+                        }
+                    </td>
+                    <td><button class="order-button">Заказать</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .service-container {
+        max-width: 80%; /* Устанавливаем ширину формы на 80% */
+        margin: auto;
+        font-family: Arial, sans-serif;
+    }
+
+    .service-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+        .service-table th, .service-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .service-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+    .free-price {
+        color: #ff9900;
+        font-weight: bold;
+    }
+
+    .order-button {
+        background-color: #28a745;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 16px;
+        cursor: pointer;
+    }
+
+        .order-button:hover {
+            background-color: #218838;
+        }
+</style>
+
+@code {
+    List<Service> services = new List<Service>
+    {
+        new Service { Name = "Диагностика", Description = "Полная диагностика устройства", BasePrice = 0, BaseDuration = "15 мин" },
+        new Service { Name = "Замена аккумулятора", Description = "Замена оригинального аккумулятора", BasePrice = 590, BaseDuration = "15 мин" },
+        new Service { Name = "Замена экрана (копия)", Description = "Установка экрана-аналога", BasePrice = 800, BaseDuration = "20 мин" },
+        new Service { Name = "Замена экрана (оригинал)", Description = "Установка оригинального экрана", BasePrice = 1200, BaseDuration = "20 мин" },
+        // Добавьте остальные услуги по аналогии...
+    };
+}
