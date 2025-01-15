@@ -1,0 +1,87 @@
+﻿@page "/users"
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Data
+
+@rendermode InteractiveServer
+
+@inject NavigationManager Navigation
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<h3>Список пользователей</h3>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (users == null || !users.Any())
+{
+    <p>Пользователи отсутствуют.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Имя пользователя</th>
+                <th>Email</th>
+                <th>Роли</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.UserName</td>
+                    <td>@user.Email</td>
+                    <td>@string.Join(", ", user.Roles)</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => NavigateToEditUser(user.Id)">Изменить</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<UserViewModel> users = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+        isLoading = false;
+    }
+
+    private async Task LoadUsers()
+    {
+        using var dbContext = DbFactory.CreateDbContext();
+
+        users = await dbContext.Users
+            .Select(u => new UserViewModel
+                {
+                    Id = u.Id,
+                    UserName = $"{u.Surname} {u.Name} {u.Patronymic}",
+                    Email = u.Email,
+                    Roles = dbContext.UserRoles
+                        .Where(ur => ur.UserId == u.Id)
+                        .Join(dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                        .ToList()
+                })
+            .ToListAsync();
+    }
+
+    private void NavigateToEditUser(int userId)
+    {
+        Navigation.NavigateTo($"/users/edit/{userId}");
+    }
+
+    public class UserViewModel
+    {
+        public int Id { get; set; } = default!;
+        public string UserName { get; set; } = default!;
+        public string Email { get; set; } = default!;
+        public List<string> Roles { get; set; } = new();
+    }
+}

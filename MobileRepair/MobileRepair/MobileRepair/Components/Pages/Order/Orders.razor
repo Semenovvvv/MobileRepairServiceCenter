@@ -1,0 +1,107 @@
+﻿@page "/orders"
+
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Data
+@using MobileRepair.Data.Models
+
+@rendermode InteractiveServer
+
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Список заявок на ремонт</h3>
+
+<button class="btn btn-primary mb-3" @onclick="NavigateToOrderPage">Заказать ремонт</button>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (userOrders == null || !userOrders.Any())
+{
+    <p>Заявки отсутствуют.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Устройство</th>
+                <th>Описание проблемы</th>
+                <th>Статус</th>
+                <th>Дата создания</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in userOrders)
+            {
+                <tr>
+                    <td>@order.Device.Manufacturer @order.Device.Model</td>
+                    <td>@order.Descryption</td>
+                    <td>@order.Status</td>
+                    <td>@order.DateBy.ToShortDateString()</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => NavigateToOrderDetails(order.Id)">Детали</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private ApplicationUser CurrentUser;
+    private List<Order>? userOrders;
+    private bool isLoading = true;
+    private int currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUserId = int.Parse(user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value);
+                await LoadUserOrders();
+            }
+        }
+        catch (Exception ex)
+        {
+            
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadUserOrders()
+    {
+        try
+        {
+            // Загрузка данных для текущего пользователя
+            using var dbContext = DbFactory.CreateDbContext();
+            userOrders = await dbContext.Orders
+                .Where(x => x.Device.Client.Id == currentUserId)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+        }
+    }
+
+    private void NavigateToOrderPage()
+    {
+        Navigation.NavigateTo("/create-order");
+    }
+
+    private void NavigateToOrderDetails(int orderId)
+    {
+        Navigation.NavigateTo($"/orders/{orderId}");
+    }
+}

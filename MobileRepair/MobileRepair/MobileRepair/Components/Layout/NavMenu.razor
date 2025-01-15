@@ -11,26 +11,46 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/price">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Прайс
-            </NavLink>
-        </div>
-
-        @* <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="home">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div> *@
-
         <AuthorizeView>
             <Authorized>
+                
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/price">
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Прайс
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/orders">
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Мои заказы
+                    </NavLink>
+                </div>
+                
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/all-orders">
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Заказы
+                    </NavLink>
+                </div>
+                
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/export-excel">
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Экспорт в Excel
+                    </NavLink>
+                </div>
+                
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="import-excel">
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Импорт с Excel
+                    </NavLink>
+                </div>
+                
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/users">
+                        <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Пользователи
+                    </NavLink>
+                </div>
+                
+
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
                         <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
@@ -38,8 +58,8 @@
                 </div>
                 <div class="nav-item px-3">
                     <form action="Account/Logout" method="post">
-                        <AntiforgeryToken />
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <AntiforgeryToken/>
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
                         <button type="submit" class="nav-link">
                             <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Выйти
                         </button>

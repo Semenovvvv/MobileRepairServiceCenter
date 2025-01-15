@@ -10,12 +10,11 @@ namespace MobileRepair.Data.Configurations
         {
             builder.HasKey(x => x.Id);
 
-            builder.HasOne(d => d.ClientUser)
+            builder.HasOne(x => x.Client)
                 .WithMany()
-                .HasForeignKey(d => d.ClientId);
+                .HasForeignKey(x => x.ClientId);
 
-            builder.Property(x => x.IMEI)
-                .HasMaxLength(50);
+            builder.Property(x => x.DateBy).HasColumnType("timestamp");
         }
     }
 }

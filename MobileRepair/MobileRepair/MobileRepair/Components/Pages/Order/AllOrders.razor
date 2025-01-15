@@ -1,0 +1,133 @@
+﻿@page "/all-orders"
+
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Constants
+@using MobileRepair.Data
+@using MobileRepair.Data.Models
+
+@rendermode InteractiveServer
+
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<h3>Управление заявками на ремонт</h3>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (allOrders == null || !allOrders.Any())
+{
+    <p>Заявки отсутствуют.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Устройство</th>
+                <th>Описание проблемы</th>
+                <th>Клиент</th>
+                <th>Эл. почта</th>
+                <th>Номер телефона</th>
+                <th>Статус</th>
+                <th>Дата создания</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in allOrders)
+            {
+                <tr>
+                    <td>@order.Device.Manufacturer @order.Device.Model</td>
+                    <td>@order.Descryption</td>
+                    <td>@order.Device.Client.Surname @order.Device.Client.Name @order.Device.Client.Patronymic</td>
+                    <td>@order.Device.Client.Email</td>
+                    <td>@order.Device.Client.PhoneNumber</td>
+                    <td>@order.Status</td>
+                    <td>@order.DateBy.ToShortDateString()</td>
+                    @* <td>
+                        <select @onchange="(e) => UpdateOrderStatus(order, e.Value)">
+                            @foreach (var status in OrderStatusConstants.GetAllStatuses().Select(x => x.Value))
+                            {
+                                <option value="@status" selected="@(order.Status == status)">
+                                    @status
+                                </option>
+                            }
+                        </select>
+                        <button class="btn btn-sm btn-success" @onclick="() => SaveOrderStatus(order)">Сохранить</button>
+                    </td> *@
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => NavigateToOrderDetails(order.Id)">Детали</button>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Order>? allOrders;
+    private bool isLoading = true;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            await LoadAllOrders();
+        }
+        catch (Exception ex)
+        {
+            // Обработка исключений
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadAllOrders()
+    {
+        using var dbContext = DbFactory.CreateDbContext();
+
+        allOrders = await dbContext.Orders
+            .Include(x => x.Device)
+            .ThenInclude(d => d.Client)
+            .ToListAsync();
+    }
+
+    private async Task SaveOrderStatus(Order order)
+    {
+        try
+        {
+            using var dbContext = DbFactory.CreateDbContext();
+
+            // Обновляем статус заказа в базе данных
+            var existingOrder = await dbContext.Orders.FindAsync(order.Id);
+            if (existingOrder != null)
+            {
+                existingOrder.Status = order.Status;
+                await dbContext.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            
+        }
+    }
+
+    private void UpdateOrderStatus(Order order, object newStatus)
+    {
+        order.Status = newStatus.ToString();
+    }
+
+    private void NavigateToOrderDetails(int orderId)
+    {
+        Navigation.NavigateTo($"/orders/{orderId}");
+    }
+}

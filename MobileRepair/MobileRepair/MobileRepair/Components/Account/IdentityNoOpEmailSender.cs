@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using MobileRepair.Data;
+using MobileRepair.Data.Models;
 
 namespace MobileRepair.Components.Account
 {

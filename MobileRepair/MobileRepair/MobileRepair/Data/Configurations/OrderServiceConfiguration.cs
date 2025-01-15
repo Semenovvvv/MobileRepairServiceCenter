@@ -8,7 +8,7 @@ namespace MobileRepair.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<OrderService> builder)
         {
-            builder.HasKey(x => new { x.ServiceId, x.OrderId });
+            builder.HasKey(t => new { t.OrderId, t.ServiceId });
 
             builder.HasOne(x => x.Order)
                 .WithMany()

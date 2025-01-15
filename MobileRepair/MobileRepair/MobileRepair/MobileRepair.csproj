@@ -8,17 +8,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Components\Images\**" />
+    <Compile Remove="Data\Migrations\**" />
+    <Content Remove="Components\Images\**" />
+    <Content Remove="Data\Migrations\**" />
+    <EmbeddedResource Remove="Components\Images\**" />
+    <EmbeddedResource Remove="Data\Migrations\**" />
+    <None Remove="Components\Images\**" />
+    <None Remove="Data\Migrations\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MobileRepair.Client\MobileRepair.Client.csproj" />
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Components\Images\" />
-    <Folder Include="Data\Migrations\" />
   </ItemGroup>
 
 </Project>

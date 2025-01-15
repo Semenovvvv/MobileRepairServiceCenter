@@ -1,6 +1,9 @@
 ﻿@page "/price"
 
-@using MobileRepair.Data.Models
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Data
 
 <div class="service-container">
     <table class="service-table">
@@ -14,7 +17,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var service in services)
+            @foreach (var service in DbFactory.CreateDbContext().Services)
             {
                 <tr>
                     <td>@service.Name</td>
@@ -85,12 +88,5 @@
 </style>
 
 @code {
-    List<Service> services = new List<Service>
-    {
-        new Service { Name = "Диагностика", Description = "Полная диагностика устройства", BasePrice = 0, BaseDuration = "15 мин" },
-        new Service { Name = "Замена аккумулятора", Description = "Замена оригинального аккумулятора", BasePrice = 590, BaseDuration = "15 мин" },
-        new Service { Name = "Замена экрана (копия)", Description = "Установка экрана-аналога", BasePrice = 800, BaseDuration = "20 мин" },
-        new Service { Name = "Замена экрана (оригинал)", Description = "Установка оригинального экрана", BasePrice = 1200, BaseDuration = "20 мин" },
-        // Добавьте остальные услуги по аналогии...
-    };
+
 }

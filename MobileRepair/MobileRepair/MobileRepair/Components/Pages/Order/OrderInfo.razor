@@ -1,0 +1,194 @@
+﻿@page "/orders/{orderId:int}"
+
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Constants
+@using MobileRepair.Data
+@using MobileRepair.Data.Models
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<h3>Детали заявки</h3>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (order == null)
+{
+    <p>Заявка не найдена.</p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <h4>Информация о заказе</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Статус:</strong> @order.Status</p>
+            <p><strong>Дата создания:</strong> @order.DateBy.ToShortDateString()</p>
+            <p><strong>Описание проблемы:</strong> @order.Descryption</p>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h4>Информация об устройстве</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Производитель:</strong> @order.Device.Manufacturer</p>
+            <p><strong>Модель:</strong> @order.Device.Model</p>
+            <p><strong>Тип устройства:</strong> @order.Device.Type</p>
+        </div>
+    </div>
+
+    <AuthorizeView Roles="Admin,Employee">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Информация о клиенте</h4>
+            </div>
+            <div class="card-body">
+                <p><strong>ФИО:</strong> @order.Device.Client.Surname @order.Device.Client.Name @order.Device.Client.Patronymic</p>
+                <p><strong>Email:</strong> @order.Device.Client.Email</p>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Изменение статуса</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="status" class="form-label">Новый статус:</label>
+                    <select id="status" class="form-select" @bind="newStatus">
+                        @foreach (var status in availableStatuses)
+                        {
+                            <option value="@status" selected="@(order.Status == status)">@status</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="note" class="form-label">Примечание:</label>
+                    <textarea id="note" class="form-control" @bind="statusNote" rows="3"></textarea>
+                </div>
+                <button class="btn btn-success" @onclick="UpdateOrderStatus">Сохранить</button>
+            </div>
+        </div>
+    </AuthorizeView>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h4>История статусов</h4>
+        </div>
+        <div class="card-body">
+            <ul>
+                @foreach (var status in orderStatusHistory)
+                {
+                    <li>@status.EditDate!.Value.ToShortDateString() - @status.OldStatus - @status.NewStatus</li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <p/>
+
+    <button type="button" class="btn btn-secondary" @onclick="GoBack">Отмена</button>
+
+    <p />
+}
+
+@code {
+    [Parameter]
+    public int orderId { get; set; }
+
+    private string newStatus = string.Empty;
+    private string statusNote = string.Empty;
+    private List<string> availableStatuses = OrderStatusConstants.GetAllStatuses().Values.ToList();
+    private Order? order;
+    private List<OrderHistory>? orderStatusHistory;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+
+        try
+        {
+            using var dbContext = DbFactory.CreateDbContext();
+
+            // Загружаем заказ
+            order = await dbContext.Orders
+                .Include(o => o.Device)
+                .ThenInclude(d => d.Client)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            // Загружаем историю статусов
+            orderStatusHistory = await dbContext.OrdersHistory
+                .Where(h => h.OrderId == orderId)
+                .OrderByDescending(h => h.EditDate)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // Обработка ошибок
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task UpdateOrderStatus()
+    {
+        if (order == null || string.IsNullOrEmpty(newStatus))
+        {
+            return;
+        }
+
+        try
+        {
+            using var dbContext = DbFactory.CreateDbContext();
+
+            // Обновляем статус заказа
+            var existingOrder = await dbContext.Orders.FindAsync(order.Id);
+            if (existingOrder != null)
+            {
+                existingOrder.Status = newStatus;
+                await dbContext.SaveChangesAsync();
+            }
+
+            // Добавляем запись в историю статусов
+            var statusHistory = new OrderHistory
+            {
+                OrderId = order.Id,
+                OldStatus = order.Status,
+                NewStatus = newStatus,
+                Note = statusNote,
+                EditDate = DateTime.Now
+            };
+
+            await dbContext.OrdersHistory.AddAsync(statusHistory);
+            await dbContext.SaveChangesAsync();
+
+            // Обновляем локальные данные
+            order.Status = newStatus;
+            statusNote = string.Empty;
+            orderStatusHistory = await dbContext.OrdersHistory
+                .Where(h => h.OrderId == order.Id)
+                .OrderByDescending(h => h.EditDate)
+                .ToListAsync();
+
+        }
+        catch (Exception ex)
+        {
+            // Обработка ошибок
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/all-orders");
+    }
+}

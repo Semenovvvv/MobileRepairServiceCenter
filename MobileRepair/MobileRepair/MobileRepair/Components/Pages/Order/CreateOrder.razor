@@ -1,0 +1,234 @@
+﻿@page "/create-order"
+
+@rendermode InteractiveServer
+@using System.Collections
+@using System.ComponentModel.DataAnnotations
+@using System.Transactions
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Components.Account.Pages
+@using MobileRepair.Constants
+@using MobileRepair.Data
+@using MobileRepair.Data.Models
+
+@inject NavigationManager Navigation
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>Создание заявки на ремонт</h3>
+
+<EditForm Model="@order" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="clientName">Производитель</label>
+        <InputText id="clientName" class="form-control" @bind-Value="input.DeviceManufactorer" />
+        <ValidationMessage For="@(() => input.DeviceManufactorer)" />
+    </div>
+
+    <div class="form-group">
+        <label for="clientPhone">Модель</label>
+        <InputText id="clientPhone" class="form-control" @bind-Value="input.DeviceModel" />
+        <ValidationMessage For="@(() => input.DeviceModel)" />
+    </div>
+    
+    <div class="form-group">
+        <label for="deviceType">Тип устройства</label>
+        <InputSelect id="deviceType" class="form-control" @bind-Value="input.DeviceType" multiple>
+            <option value="Смартфон" selected="">Смартфон</option>
+            <option value="Планшет">Планшет</option>
+        </InputSelect>
+        <ValidationMessage For="@(() => input.DeviceType)" />
+    </div>
+    
+    <div class="form-group">
+        <label for="clientPhone">Описание проблемы(опционально)</label>
+        <InputText id="clientPhone" class="form-control" @bind-Value="input.ProblemDescription" />
+        <ValidationMessage For="@(() => input.ProblemDescription)" />
+    </div>
+
+    <div class="form-group">
+        <label>Выберите услуги</label>
+        @if (Services != null)
+        {
+            @foreach (var service in Services)
+            {
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="service-@service.Id" @onchange="(e) => ToggleServiceSelection(e, service)" />
+                    <label class="form-check-label" for="service-@service.Id">@service.Name (@service.BasePrice руб.)</label>
+                </div>
+            }
+        }
+        else
+        {
+            <p>Загрузка списка услуг...</p>
+        }
+        <ValidationMessage For="@(() => Services)" />
+    </div>
+    
+    <p></p>
+
+    <button type="submit" class="btn btn-primary" @onclick="RegisterOrder">Создать заявку</button>
+    <button type="button" class="btn btn-secondary" @onclick="GoBack">Отмена</button>
+</EditForm>
+
+@if (isSubmitted)
+{
+    <p class="text-success">Заявка успешно создана!</p>
+}
+
+@code {
+    private ApplicationUser User;
+    private Device device = new();
+    private Order order = new();
+    private IList<Service> Services = new List<Service>();
+    private Input input = new Input();
+    private bool isSubmitted = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var dbContext = DbFactory.CreateDbContextAsync().Result;
+        Services = await dbContext.Services.AsNoTracking().ToListAsync();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var currentUserId = int.Parse(user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value);
+            User = (await dbContext.Users.FirstOrDefaultAsync(x => x.Id == currentUserId))!;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            // Отправка данных на сервер
+            //var response = await Http.PostAsJsonAsync("api/repair-orders", repairOrder);
+
+            //if (response.IsSuccessStatusCode)
+            // {
+            //     isSubmitted = true;
+            //     Navigation.NavigateTo("/orders");
+            // }
+            // else
+            // {
+            //     Logger.LogError("Ошибка при создании заявки.");
+            // }
+        }
+        catch (Exception ex)
+        {
+        }
+    }
+
+    private void ToggleServiceSelection(ChangeEventArgs e, Service service)
+    {
+        if ((bool)e.Value!)
+        {
+            if (!input.SelectedServices.Contains(service))
+                input.SelectedServices.Add(service);
+        }
+        else
+        {
+            input.SelectedServices.Remove(service);
+        }
+    }
+
+    private async Task RegisterOrder()
+    {
+        if (string.IsNullOrEmpty(input.DeviceManufactorer) | string.IsNullOrEmpty(input.DeviceModel))
+        {
+            return;
+        }
+
+        using var dbContext = DbFactory.CreateDbContext();
+
+        using (var transaction = await dbContext.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                var device = new Device()
+                {
+                    Manufacturer = input.DeviceManufactorer,
+                    Model = input.DeviceModel,
+                    DateBy = DateTime.Now,
+                    ClientId = User.Id,
+                    Type = input.DeviceType
+                };
+
+
+                var deviceEntry = await dbContext.Devices.AddAsync(device);
+                device = deviceEntry.Entity;
+
+                var order = new Order()
+                {
+                    Device = device,
+                    DateBy = DateTime.Now,
+                    Descryption = input.ProblemDescription,
+                    Status = OrderStatusConstants.Created
+                };
+
+
+                var orderEntry = await dbContext.Orders.AddAsync(order);
+                order = orderEntry.Entity;
+
+                await dbContext.SaveChangesAsync();
+
+                var orderStatus = new OrderHistory()
+                    {
+                        Order = order,
+                        EditDate = DateTime.Now,
+                        EditUserId = User.Id,
+                        NewStatus = OrderStatusConstants.Created
+                    };
+
+                await dbContext.OrdersHistory.AddAsync(orderStatus);
+
+                foreach (var service in input.SelectedServices)
+                {
+                    var os = new OrderService()
+                    {
+                        OrderId = order.Id,
+                        ServiceId = service.Id
+                    };
+                    await dbContext.OrderServices
+                        .AddAsync(os);
+                }
+
+                await dbContext.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync();
+            }
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/orders");
+    }
+
+    private record Input
+    {
+        [Required]
+        [StringLength(20, MinimumLength = 2)]
+        public string DeviceManufactorer { get; set; }
+
+        [Required]
+        [StringLength(20, MinimumLength = 2)]
+        public string DeviceModel { get; set; }
+
+        [Required]
+        [StringLength(20, MinimumLength = 2)]
+        public string DeviceType { get; set; }
+
+        public string ProblemDescription { get; set; }
+
+        public IList<Service> SelectedServices = new List<Service>();
+    }
+}

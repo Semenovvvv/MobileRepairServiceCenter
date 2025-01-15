@@ -2,16 +2,18 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using MobileRepair.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<PageTitle>Profile</PageTitle>
+<PageTitle>Профиль</PageTitle>
 
-<h3>Profile</h3>
+<h3>Профиль</h3>
 <StatusMessage />
 
 <div class="row">
@@ -20,12 +22,29 @@
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
-                <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
+                <input type="text" value="@username" class="form-control" placeholder="Имя пользователя" disabled />
+                <label for="username" class="form-label">Логин</label>
+            </div>
+            
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Surname" class="form-control" placeholder="Фамилия" />
+                <label for="phone-number" class="form-label">Фамилия</label>
+                <ValidationMessage For="() => Input.Surname" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
-                <label for="phone-number" class="form-label">Phone number</label>
+                <InputText @bind-Value="Input.Name" class="form-control" placeholder="Имя" />
+                <label for="phone-number" class="form-label">Имя</label>
+                <ValidationMessage For="() => Input.Name" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Patronymic" class="form-control" placeholder="Отчество" />
+                <label for="phone-number" class="form-label">Отчество</label>
+                <ValidationMessage For="() => Input.Patronymic" class="text-danger" />
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Номер телефона" />
+                <label for="phone-number" class="form-label">Номер телефона</label>
                 <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
@@ -50,11 +69,16 @@
         username = await UserManager.GetUserNameAsync(user);
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
+
         Input.PhoneNumber ??= phoneNumber;
+        Input.Surname = user.Surname;
+        Input.Name = user.Name;
+        Input.Patronymic = user.Patronymic;
     }
 
     private async Task OnValidSubmitAsync()
     {
+        
         if (Input.PhoneNumber != phoneNumber)
         {
             var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
@@ -64,8 +88,17 @@
             }
         }
 
+        using (var dbContext = DbFactory.CreateDbContextAsync().Result)
+        {
+            user.Surname = Input.Surname;
+            user.Name = Input.Name;
+            user.Patronymic = Input.Patronymic;
+
+            await dbContext.SaveChangesAsync();
+        }
+
         await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        RedirectManager.RedirectToCurrentPageWithStatus("Ваш профиль был изменен", HttpContext);
     }
 
     private sealed class InputModel
@@ -73,5 +106,9 @@
         [Phone]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+
+        public string Surname { get; set; }
+        public string Name { get; set; }
+        public string Patronymic { get; set; }
     }
 }

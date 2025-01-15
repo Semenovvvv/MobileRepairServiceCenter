@@ -4,9 +4,9 @@ using MobileRepair.Data.Models;
 
 namespace MobileRepair.Data.Configurations
 {
-    public class ClientConfiguration : IEntityTypeConfiguration<ClientUser>
+    public class ClientConfiguration : IEntityTypeConfiguration<ApplicationUser>
     {
-        public void Configure(EntityTypeBuilder<ClientUser> builder)
+        public void Configure(EntityTypeBuilder<ApplicationUser> builder)
         {
             builder.HasKey(x => x.Id);
 
@@ -22,11 +22,11 @@ namespace MobileRepair.Data.Configurations
             builder.Property(x => x.Email)
                .HasMaxLength(50);
 
-            builder.Property(x => x.Phone)
-               .HasMaxLength(20);
-
             builder.Property(x => x.Surname)
                .HasMaxLength(200);
+
+            builder.Property(x => x.CreatedDate).HasColumnType("timestamp");
+            builder.Property(x => x.HireDate).HasColumnType("timestamp");
         }
     }
 }

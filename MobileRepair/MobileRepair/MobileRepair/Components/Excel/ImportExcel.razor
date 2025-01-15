@@ -1,0 +1,131 @@
+﻿@page "/import-excel"
+
+@using System
+@using System.IO
+@using ClosedXML.Excel
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Data
+@using MobileRepair.Data.Models
+@using MobileRepair.Interfaces
+@using Microsoft.AspNetCore.Hosting
+@inject IWebHostEnvironment Environment
+
+@inject IJSRuntime JSRuntime
+
+@rendermode InteractiveServer
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IUserService userService
+
+<h3>Импорт данных</h3>
+
+<p>@statusMessage</p>
+
+<div>
+    <h4>Выберите тип данных для импорта:</h4>
+    <select @bind="selectedType" class="form-select mb-3">
+        <option value="Users">Пользователи</option>
+        <option value="Devices">Устройства</option>
+    </select>
+
+    <h4>Загрузите файл Excel:</h4>
+    <InputFile OnChange="OnFileSelected" accept=".xlsx" multiple="false"></InputFile>
+</div>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <p class="mt-3">@message</p>
+}
+
+@code {
+    private string selectedType = "Users";
+    private string statusMessage;
+    private IBrowserFile? uploadedFile;
+    private bool fileReady = false;
+    private string message = "";
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file == null)
+            {
+                statusMessage = "Файл не выбран.";
+                return;
+            }
+
+            using var stream = file.OpenReadStream();
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+
+            using var workbook = new XLWorkbook(memoryStream);
+            var worksheet = workbook.Worksheet(1);
+
+            if (selectedType == "Users")
+            {
+                await ImportUsers(worksheet);
+            }
+            else if (selectedType == "Devices")
+            {
+                await ImportDevices(worksheet);
+            }
+
+            statusMessage = "Данные успешно загружены!";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Ошибка при загрузке данных: {ex.Message}";
+        }
+    }
+
+    private async Task ImportUsers(IXLWorksheet worksheet)
+    {
+        using var dbContext = DbFactory.CreateDbContext();
+
+        foreach (var row in worksheet.RowsUsed().Skip(1))
+        {
+            var user = new ApplicationUser
+            {
+                Surname = row.Cell(1).GetValue<string>(),
+                Name = row.Cell(2).GetValue<string>(),
+                Patronymic = row.Cell(3).GetValue<string>(),
+                Email = row.Cell(4).GetValue<string>(),
+                PhoneNumber = row.Cell(5).GetValue<string>(),
+            };
+
+            var password = row.Cell(6).GetValue<string>();
+
+            if (!dbContext.Users.Any(u => u.Email == user.Email))
+            {
+                userService.RegisterClient(user, password);
+                //dbContext.Users.Add(user);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task ImportDevices(IXLWorksheet worksheet)
+    {
+        using var dbContext = DbFactory.CreateDbContext();
+
+        foreach (var row in worksheet.RowsUsed().Skip(1))
+        {
+            var device = new Device
+            {
+                Manufacturer = row.Cell(1).GetValue<string>(),
+                Model = row.Cell(2).GetValue<string>(),
+                Type = row.Cell(3).GetValue<string>(),
+            };
+
+            if (!dbContext.Devices.Any(d => d.Manufacturer == device.Manufacturer && d.Model == device.Model))
+            {
+                dbContext.Devices.Add(device);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+}

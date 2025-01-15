@@ -1,0 +1,168 @@
+﻿@page "/users/edit/{UserId}"
+
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Data
+
+@rendermode InteractiveServer
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+
+<h3>Редактирование пользователя</h3>
+
+@if (isLoading)
+{
+    <p>Загрузка...</p>
+}
+else if (user == null)
+{
+    <p>Пользователь не найден.</p>
+}
+else
+{
+    <div class="mb-3">
+        <label for="username">Фамилия:</label>
+        <input id="username" class="form-control" @bind="user.Surname" />
+    </div>
+    <div class="mb-3">
+        <label for="username">Имя:</label>
+        <input id="username" class="form-control" @bind="user.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="username">Отчество:</label>
+        <input id="username" class="form-control" @bind="user.Patronymic" />
+    </div>
+    <div class="mb-3">
+        <label for="email">Почта:</label>
+        <input id="email" class="form-control" @bind="user.Email" />
+    </div>
+    <div class="mb-3">
+        <label for="phone">Номер телефона:</label>
+        <input id="phone" class="form-control" @bind="user.PhoneNumber" />
+    </div>
+    <div class="mb-3">
+        <label>Роли:</label>
+        @foreach (var role in allRoles)
+        {
+            <div>
+                <input type="checkbox" @bind="role.IsSelected" />
+                <label>@role.Name</label>
+            </div>
+        }
+    </div>
+    <button class="btn btn-success" @onclick="SaveUser">Сохранить</button>
+    <button class="btn btn-secondary" @onclick="NavigateBack">Назад</button>
+}
+
+@code {
+    [Parameter]
+    public string UserId { get; set; } = default!;
+    private int _userId { get; set; }
+    private EditUserViewModel? user;
+    private List<RoleViewModel> allRoles = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserData();
+        isLoading = false;
+        _userId = int.Parse(UserId);
+    }
+
+    private async Task LoadUserData()
+    {
+        using var dbContext = DbFactory.CreateDbContext();
+
+        var dbUser = await dbContext.Users.FindAsync(int.Parse(UserId));
+
+        if (dbUser == null)
+        {
+            user = null;
+            return;
+        }
+
+        user = new EditUserViewModel
+        {
+            Id = dbUser.Id,
+            Surname = dbUser.Surname!,
+            Name = dbUser.Name!,
+            Patronymic = dbUser.Patronymic!,
+            Email = dbUser.Email!,
+            PhoneNumber = dbUser.PhoneNumber!,
+            Roles = await dbContext.UserRoles
+                .Where(ur => ur.UserId == dbUser.Id)
+                .Join(dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                .ToListAsync()
+        };
+
+        allRoles = await dbContext.Roles
+            .Select(r => new RoleViewModel
+            {
+                Id = r.Id,
+                Name = r.Name,
+                IsSelected = user.Roles.Contains(r.Name)
+            })
+            .ToListAsync();
+    }
+
+    private async Task SaveUser()
+    {
+        using var dbContext = DbFactory.CreateDbContext();
+
+        var dbUser = await dbContext.Users.FindAsync(user!.Id);
+        if (dbUser == null) return;
+
+        dbUser.Surname = user.Surname;
+        dbUser.Name = user.Name;
+        dbUser.Patronymic = user.Patronymic;
+        dbUser.Email = user.Email;
+        dbUser.NormalizedEmail = user.Email.ToUpper();
+        dbUser.UserName = user.Email;
+        dbUser.PhoneNumber = user.PhoneNumber;
+
+        // Обновление ролей
+        var currentRoles = await dbContext.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .ToListAsync();
+
+        dbContext.UserRoles.RemoveRange(currentRoles);
+
+        var selectedRoles = allRoles
+            .Where(r => r.IsSelected)
+            .Select(r => new IdentityUserRole<int>
+            {
+                UserId = user.Id,
+                RoleId = r.Id
+            });
+
+        await dbContext.UserRoles.AddRangeAsync(selectedRoles);
+
+        await dbContext.SaveChangesAsync();
+        Navigation.NavigateTo("/users");
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/users");
+    }
+
+    public class EditUserViewModel
+    {
+        public int Id { get; set; } = default!;
+        public string Surname { get; set; } = default!;
+        public string Name { get; set; } = default!;
+        public string Patronymic { get; set; } = default!;
+        public string Email { get; set; } = default!;
+        public string PhoneNumber { get; set; } = default!;
+        public List<string> Roles { get; set; } = new();
+    }
+
+    public class RoleViewModel
+    {
+        public int Id { get; set; } = default!;
+        public string Name { get; set; } = default!;
+        public bool IsSelected { get; set; }
+    }
+}

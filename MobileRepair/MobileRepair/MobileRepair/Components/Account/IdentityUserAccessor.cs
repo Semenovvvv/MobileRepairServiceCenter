@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using MobileRepair.Data;
+using MobileRepair.Data.Models;
 
 namespace MobileRepair.Components.Account
 {
