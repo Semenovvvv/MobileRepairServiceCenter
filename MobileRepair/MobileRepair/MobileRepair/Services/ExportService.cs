@@ -1,35 +1,25 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.ExtendedProperties;
-using Microsoft.AspNetCore.Identity;
-using MobileRepair.Data;
 using Microsoft.EntityFrameworkCore;
+using MobileRepair.Data;
 using MobileRepair.Interfaces;
 
-public class ExportService : IExportService
+namespace MobileRepair.Services;
+
+public class ExportService(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IExportService
 {
-    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
-    private readonly UserManager<ApplicationUser> _userManager;
-
-    public ExportService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
-    {
-        _dbContextFactory = dbContextFactory;
-    }
-
     public async Task<byte[]> ExportOrdersAsync(DateTime? startDate, DateTime? endDate, int? maxRecords)
     {
-        using var dbContext = _dbContextFactory.CreateDbContext();
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         var query = dbContext.Orders.Include(o => o.Device)
             .Include(o => o.Device.Client)
             .AsQueryable();
 
-        // Фильтрация по дате
         if (startDate.HasValue)
             query = query.Where(o => o.DateBy >= startDate.Value);
 
         if (endDate.HasValue)
             query = query.Where(o => o.DateBy <= endDate.Value);
 
-        // Ограничение количества записей
         if (maxRecords.HasValue)
             query = query.Take(maxRecords.Value);
 
@@ -45,7 +35,7 @@ public class ExportService : IExportService
         worksheet.Cell(1, 5).Value = "Описание";
         worksheet.Cell(1, 6).Value = "Дата";
 
-        for (int i = 0; i < orders.Count; i++)
+        for (var i = 0; i < orders.Count; i++)
         {
             var order = orders[i];
             worksheet.Cell(i + 2, 1).Value = order.Id;
@@ -63,7 +53,7 @@ public class ExportService : IExportService
 
     public async Task<byte[]> ExportDevicesAsync(DateTime? startDate, DateTime? endDate, int? maxRecords)
     {
-        using var dbContext = _dbContextFactory.CreateDbContext();
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         var query = dbContext.Devices.AsQueryable();
 
         if (startDate.HasValue)
@@ -103,7 +93,7 @@ public class ExportService : IExportService
 
     public async Task<byte[]> ExportClientsAsync(int? maxRecords)
     {
-        using var dbContext = _dbContextFactory.CreateDbContext();
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         var query = dbContext.Users.AsQueryable();
 
         if (maxRecords.HasValue)
@@ -139,7 +129,7 @@ public class ExportService : IExportService
 
     public async Task<byte[]> ExportOrderHistoryAsync(DateTime? startDate, DateTime? endDate, int? maxRecords)
     {
-        using var dbContext = _dbContextFactory.CreateDbContext();
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         var query = dbContext.OrdersHistory.Include(h => h.Order)
             .AsQueryable();
 
@@ -178,3 +168,5 @@ public class ExportService : IExportService
         return stream.ToArray();
     }
 }
+
+

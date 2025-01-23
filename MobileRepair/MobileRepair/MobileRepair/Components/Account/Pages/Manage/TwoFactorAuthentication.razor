@@ -9,10 +9,10 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Two-factor authentication (2FA)</PageTitle>
+<PageTitle>Двухфакторная аутентификация (2FA)</PageTitle>
 
 <StatusMessage />
-<h3>Two-factor authentication (2FA)</h3>
+<h3>Двухфакторная аутентификация (2FA)</h3>
 @if (canTrack)
 {
     if (is2faEnabled)
@@ -54,7 +54,7 @@
     <h4>Authenticator app</h4>
     @if (!hasAuthenticator)
     {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Add authenticator app</a>
+        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Добавить</a>
     }
     else
     {

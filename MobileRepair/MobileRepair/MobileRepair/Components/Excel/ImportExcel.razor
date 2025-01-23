@@ -1,8 +1,10 @@
 ﻿@page "/import-excel"
+@attribute [Authorize(Policy = "AdminOnly")]
 
-@using System
 @using System.IO
+@using Bogus
 @using ClosedXML.Excel
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using MobileRepair.Data
 @using MobileRepair.Data.Models
@@ -18,7 +20,8 @@
 @inject NavigationManager Navigation
 @inject IUserService userService
 
-<h3>Импорт данных</h3>
+<h2>Импорт данных</h2>
+<hr />
 
 <p>@statusMessage</p>
 
@@ -31,6 +34,8 @@
 
     <h4>Загрузите файл Excel:</h4>
     <InputFile OnChange="OnFileSelected" accept=".xlsx" multiple="false"></InputFile>
+
+    <button class="btn btn-secondary mt-3" @onclick="GenerateTestFile">Скачать тестовый файл</button>
 </div>
 
 @if (!string.IsNullOrEmpty(message))
@@ -56,7 +61,7 @@
                 return;
             }
 
-            using var stream = file.OpenReadStream();
+            await using var stream = file.OpenReadStream();
             using var memoryStream = new MemoryStream();
             await stream.CopyToAsync(memoryStream);
 
@@ -77,34 +82,40 @@
         catch (Exception ex)
         {
             statusMessage = $"Ошибка при загрузке данных: {ex.Message}";
+            Console.WriteLine($"Ошибка: {ex}");
         }
     }
 
     private async Task ImportUsers(IXLWorksheet worksheet)
     {
-        using var dbContext = DbFactory.CreateDbContext();
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
 
         foreach (var row in worksheet.RowsUsed().Skip(1))
         {
             var user = new ApplicationUser
-            {
-                Surname = row.Cell(1).GetValue<string>(),
-                Name = row.Cell(2).GetValue<string>(),
-                Patronymic = row.Cell(3).GetValue<string>(),
-                Email = row.Cell(4).GetValue<string>(),
-                PhoneNumber = row.Cell(5).GetValue<string>(),
-            };
+                {
+                    Surname = row.Cell(1).GetValue<string>(),
+                    Name = row.Cell(2).GetValue<string>(),
+                    Patronymic = row.Cell(3).GetValue<string>(),
+                    Email = row.Cell(4).GetValue<string>(),
+                    PhoneNumber = row.Cell(5).GetValue<string>(),
+                    UserName = row.Cell(4).GetValue<string>()
+                };
 
             var password = row.Cell(6).GetValue<string>();
 
             if (!dbContext.Users.Any(u => u.Email == user.Email))
             {
-                userService.RegisterClient(user, password);
-                //dbContext.Users.Add(user);
+                var result = await userService.RegisterClient(user, password);
+                if (!result.Succeeded)
+                {
+                    statusMessage = $"Ошибка при регистрации пользователя {user.Email}: {string.Join(", ", result.Errors)}";
+                    return;
+                }
             }
         }
 
-        await dbContext.SaveChangesAsync();
+        statusMessage = "Пользователи успешно зарегистрированы!";
     }
 
     private async Task ImportDevices(IXLWorksheet worksheet)
@@ -114,11 +125,11 @@
         foreach (var row in worksheet.RowsUsed().Skip(1))
         {
             var device = new Device
-            {
-                Manufacturer = row.Cell(1).GetValue<string>(),
-                Model = row.Cell(2).GetValue<string>(),
-                Type = row.Cell(3).GetValue<string>(),
-            };
+                {
+                    Manufacturer = row.Cell(1).GetValue<string>(),
+                    Model = row.Cell(2).GetValue<string>(),
+                    Type = row.Cell(3).GetValue<string>(),
+                };
 
             if (!dbContext.Devices.Any(d => d.Manufacturer == device.Manufacturer && d.Model == device.Model))
             {
@@ -127,5 +138,55 @@
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private List<ApplicationUser> GenerateRealisticUsers(int count)
+    {
+        var userFaker = new Faker<ApplicationUser>("ru")
+            .RuleFor(u => u.Surname, f => f.Name.LastName())
+            .RuleFor(u => u.Name, f => f.Name.FirstName())
+            .RuleFor(u => u.Patronymic, f => f.Name.Suffix())
+            .RuleFor(u => u.Email, (f, u) => f.Internet.Email(u.Name, u.Surname))
+            .RuleFor(u => u.PhoneNumber, f => f.Phone.PhoneNumber("+7##########"))
+            .RuleFor(u => u.UserName, (f, u) => u.Email);
+
+        return userFaker.Generate(count);
+    }
+
+    private void GenerateTestExcel(string filePath)
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Users");
+
+        // Заголовки
+        worksheet.Cell(1, 1).Value = "Фамилия";
+        worksheet.Cell(1, 2).Value = "Имя";
+        worksheet.Cell(1, 3).Value = "Отчество";
+        worksheet.Cell(1, 4).Value = "Email";
+        worksheet.Cell(1, 5).Value = "Телефон";
+        worksheet.Cell(1, 6).Value = "Пароль";
+
+        // Генерация данных
+        var users = GenerateRealisticUsers(40);
+        for (int i = 0; i < users.Count; i++)
+        {
+            var user = users[i];
+            worksheet.Cell(i + 2, 1).Value = user.Surname;
+            worksheet.Cell(i + 2, 2).Value = user.Name;
+            worksheet.Cell(i + 2, 3).Value = user.Patronymic;
+            worksheet.Cell(i + 2, 4).Value = user.Email;
+            worksheet.Cell(i + 2, 5).Value = user.PhoneNumber;
+            worksheet.Cell(i + 2, 6).Value = "Pass1.";
+        }
+
+        workbook.SaveAs(filePath);
+    }
+
+    private async Task GenerateTestFile()
+    {
+        var fileName = "TestUsers.xlsx";
+        var filePath = Path.Combine(Environment.WebRootPath, fileName);
+        GenerateTestExcel(filePath);
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName);
     }
 }

@@ -35,10 +35,6 @@ namespace MobileRepair
 
             builder.Services.AddHttpClient();
 
-            var serviceProvider = builder.Services.BuildServiceProvider();
-
-            var registeredServices = serviceProvider.GetServices<object>();
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

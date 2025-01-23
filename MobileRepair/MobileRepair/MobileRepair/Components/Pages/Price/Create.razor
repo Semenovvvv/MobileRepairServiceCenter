@@ -1,0 +1,66 @@
+﻿@page "/price/create"
+@attribute [Authorize(Policy = "AdminOnly")]
+
+@rendermode InteractiveServer
+
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using MobileRepair.Data
+@using MobileRepair.Data.Models
+
+<h2>Создание услуги</h2>
+<hr />
+
+<EditForm Model="@Service" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="serviceName">Название</label>
+        <InputText id="serviceName" class="form-control" @bind-Value="Service.Name"></InputText>
+        <ValidationMessage For="@(() => Service.Name)" />
+    </div>
+
+    <div class="form-group">
+        <label for="serviceDescription">Описание</label>
+        <InputText id="serviceDescription" class="form-control" @bind-Value="Service.Description"></InputText>
+        <ValidationMessage For="@(() => Service.Description)" />
+    </div>
+
+    <div class="form-group">
+        <label for="servicePrice">Средняя цена</label>
+        <InputNumber id="servicePrice" class="form-control" @bind-Value="Service.BasePrice"></InputNumber>
+        <ValidationMessage For="@(() => Service.BasePrice)" />
+    </div>
+
+    <div class="form-group">
+        <label for="serviceDuration">Средняя длительность</label>
+        <InputText id="serviceDuration" class="form-control" @bind-Value="Service.BaseDuration"></InputText>
+        <ValidationMessage For="@(() => Service.BaseDuration)" />
+    </div>
+    
+    <p></p>
+
+    <button type="submit" class="btn btn-primary">Создать услугу</button>
+    <button type="button" class="btn btn-secondary" @onclick="GoBack">Отмена</button>
+</EditForm>
+
+@code {
+    private Service Service { get; set; } = new Service();
+
+    private async Task HandleValidSubmit()
+    {
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
+        await dbContext.Services.AddAsync(Service);
+        await dbContext.SaveChangesAsync();
+        Navigation.NavigateTo("/price");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/price");
+    }
+}

@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MobileRepair", "MobileRepair\MobileRepair.csproj", "{7A49D8EE-4383-9520-D7A8-1762B6DD996D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MobileRepair.Client", "MobileRepair.Client\MobileRepair.Client.csproj", "{521426E1-2812-78C0-60AE-EF3938315504}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A49D8EE-4383-9520-D7A8-1762B6DD996D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A49D8EE-4383-9520-D7A8-1762B6DD996D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A49D8EE-4383-9520-D7A8-1762B6DD996D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A49D8EE-4383-9520-D7A8-1762B6DD996D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{521426E1-2812-78C0-60AE-EF3938315504}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{521426E1-2812-78C0-60AE-EF3938315504}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{521426E1-2812-78C0-60AE-EF3938315504}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{521426E1-2812-78C0-60AE-EF3938315504}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1ADBEBA0-F7C4-4844-8AD1-36082D77AC6A}
+	EndGlobalSection
+EndGlobal

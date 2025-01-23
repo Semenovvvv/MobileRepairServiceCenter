@@ -1,44 +1,73 @@
 ﻿@page "/price"
+@attribute [Authorize(Policy = "Client")]
+
+@rendermode InteractiveServer
 
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using MobileRepair.Components.Layout
 @using MobileRepair.Data
+
+
+<div class="top-row px-4">
+    <h2>Услуги</h2>
+    <hr/>
+    <AuthorizeView Policy="AdminOnly">
+        <Authorized>
+            <button class="btn btn-primary mb-3" @onclick="NavigateToCreate">Добавить</button>
+        </Authorized>
+    </AuthorizeView>
+    
+</div>
+
 
 <div class="service-container">
     <table class="service-table">
         <thead>
-            <tr>
-                <th>Услуга</th>
-                <th>Описание</th>
-                <th>Время</th>
-                <th>Стоимость</th>
-                <th></th>
-            </tr>
+        <tr>
+            <th>Услуга</th>
+            <th>Описание</th>
+            <th>Время</th>
+            <th>Стоимость</th>
+            <th></th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var service in DbFactory.CreateDbContext().Services)
-            {
-                <tr>
-                    <td>@service.Name</td>
-                    <td>@service.Description</td>
-                    <td>@service.BaseDuration</td>
-                    <td>
-                        @if (service.BasePrice == 0)
-                        {
-                            <span class="free-price">Бесплатно</span>
-                        }
-                        else
-                        {
-                            @($"{service.BasePrice:C}")
-                        }
-                    </td>
-                    <td><button class="order-button">Заказать</button></td>
-                </tr>
-            }
+        @foreach (var service in DbFactory.CreateDbContext().Services)
+        {
+            <tr>
+                <td>@service.Name</td>
+                <td>@service.Description</td>
+                <td>@service.BaseDuration</td>
+                <td>
+                    @if (service.BasePrice == 0)
+                    {
+                        <span class="free-price">Бесплатно</span>
+                    }
+                    else
+                    {
+                        @($"{service.BasePrice:C}")
+                    }
+                </td>
+                
+                <AuthorizeView Policy="AdminOnly">
+                    <Authorized>
+                        <td>
+                            <button class="btn btn-primary btn-sm" @onclick="() => EditService(service.Id)">Изменить</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteService(service.Id)">Удалить</button>
+                        </td>
+                    </Authorized>
+                </AuthorizeView>
+            </tr>
+        }
         </tbody>
     </table>
 </div>
+
+
 
 <style>
     .service-container {
@@ -88,5 +117,35 @@
 </style>
 
 @code {
+    [CascadingParameter]
+    public MainLayout? Layout { get; set; }
+
+    protected override void OnInitialized()
+    {
+        
+    }
+
+    private void NavigateToCreate()
+    {
+        Navigation.NavigateTo("price/create");
+    }
+
+    private void EditService(int serviceId)
+    {
+        Navigation.NavigateTo($"price/edit/{serviceId}");
+    }
+
+    private async Task DeleteService(int serviceId)
+    {
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
+        var service = await dbContext.Services.FindAsync(serviceId);
+        if (service != null)
+        {
+            dbContext.Services.Remove(service);
+            await dbContext.SaveChangesAsync();
+        }
+
+        Navigation.NavigateTo("price", forceLoad: true);
+    }
 
 }

@@ -8,12 +8,10 @@ namespace MobileRepair.Services
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly ILogger<UserService> _logger;
         public UserService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole<int>> roleManager, ILogger<UserService> logger)
         {
             _userManager = userManager;
-            _roleManager = roleManager;
             _logger = logger;
         }
 

@@ -1,7 +1,7 @@
-﻿using System.Composition;
-using Microsoft.AspNetCore.Components.Authorization;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using MobileRepair.Components.Account;
+using MobileRepair.Constants;
 using MobileRepair.Data;
 using MobileRepair.Interfaces;
 using MobileRepair.Services;
@@ -49,6 +49,14 @@ namespace MobileRepair.Extensions
                     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
                 })
                 .AddIdentityCookies();
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+                options.AddPolicy("Employee", policy => policy.RequireRole("Admin", "Employee"));
+                options.AddPolicy("Client", policy => policy.RequireRole("Client", "Admin"));
+                options.AddPolicy("AuthorizedUser", policy => policy.RequireRole("Client", "Admin", "Employee"));
+            });
 
             return services;
         }

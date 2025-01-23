@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MobileRepair.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MobileRepair.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250123163533_fixrela")]
+    partial class fixrela
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,21 +57,21 @@ namespace MobileRepair.Migrations
                         new
                         {
                             Id = 1,
-                            ConcurrencyStamp = "c55e5d63-12e0-476c-a89f-1991c9adad90",
+                            ConcurrencyStamp = "2d5ead2c-44df-4ce4-8470-e665eafad1a2",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = 2,
-                            ConcurrencyStamp = "79d612a1-9dbd-44ce-b09e-f9eeaed13165",
+                            ConcurrencyStamp = "ac87cfd4-701a-4aef-9a7a-dcb733014166",
                             Name = "Client",
                             NormalizedName = "CLIENT"
                         },
                         new
                         {
                             Id = 3,
-                            ConcurrencyStamp = "f3eeb923-c857-4eed-b6f6-82c48cf538bd",
+                            ConcurrencyStamp = "d57e5a29-5838-4ac4-b5be-12875640db96",
                             Name = "Employee",
                             NormalizedName = "EMPLOYEE"
                         });
@@ -403,6 +406,9 @@ namespace MobileRepair.Migrations
                     b.Property<int>("OrderId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("OrderId1")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("timestamp");
 
@@ -416,6 +422,8 @@ namespace MobileRepair.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId");
+
+                    b.HasIndex("OrderId1");
 
                     b.ToTable("Payments");
                 });
@@ -964,7 +972,16 @@ namespace MobileRepair.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MobileRepair.Data.Models.Order", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("OrderId1");
+
                     b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("MobileRepair.Data.Models.Order", b =>
+                {
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

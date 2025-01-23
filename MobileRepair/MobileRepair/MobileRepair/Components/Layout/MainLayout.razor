@@ -6,9 +6,10 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
+        @* <div class="top-row px-4">
+            @TopRowContent
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank"></a>
-        </div> 
+        </div>  *@
 
         
 
@@ -23,3 +24,9 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code
+{
+    [Parameter]
+    public RenderFragment? TopRowContent { get; set; }
+}

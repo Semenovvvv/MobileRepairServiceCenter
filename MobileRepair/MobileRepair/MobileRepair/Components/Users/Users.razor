@@ -1,4 +1,7 @@
 ﻿@page "/users"
+@attribute [Authorize(Policy = "AdminOnly")]
+
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using MobileRepair.Data
 

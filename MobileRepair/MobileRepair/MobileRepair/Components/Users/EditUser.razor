@@ -1,5 +1,7 @@
 ﻿@page "/users/edit/{UserId}"
+@attribute [Authorize(Policy = "AdminOnly")]
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using MobileRepair.Data

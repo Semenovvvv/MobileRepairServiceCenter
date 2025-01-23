@@ -1,7 +1,9 @@
 ﻿@page "/orders/{orderId:int}"
+@attribute [Authorize(Policy = "AuthorizedUser")]
 
 @rendermode InteractiveServer
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using MobileRepair.Constants
 @using MobileRepair.Data

@@ -7,7 +7,6 @@ namespace MobileRepair.Data
 {
     public static class SeedData
     {
-        #region Extensions
         public static ModelBuilder AddServices(this ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Service>().HasData(
@@ -50,17 +49,7 @@ namespace MobileRepair.Data
                 new Service() { Id = 37, Name = "Установка приложений", Description = "Установка и настройка необходимых приложений", BaseDuration = "20 минут", BasePrice = 600.00M },
                 new Service() { Id = 38, Name = "Ремонт GPS", Description = "Ремонт или замена GPS-модуля", BaseDuration = "1-2 часа", BasePrice = 2700.00M },
                 new Service() { Id = 39, Name = "Ремонт разъема SIM", Description = "Замена поврежденного разъема SIM", BaseDuration = "1 час", BasePrice = 2000.00M },
-                new Service() { Id = 40, Name = "Замена передней камеры", Description = "Установка нового модуля фронтальной камеры", BaseDuration = "1 час", BasePrice = 2800.00M },
-                new Service() { Id = 41, Name = "Настройка роутинга", Description = "Настройка маршрутизатора и подключения устройства", BaseDuration = "30 минут", BasePrice = 900.00M },
-                new Service() { Id = 42, Name = "Замена стекла камеры", Description = "Установка нового стекла на камеру", BaseDuration = "30 минут", BasePrice = 1000.00M },
-                new Service() { Id = 43, Name = "Ремонт датчика отпечатка пальца", Description = "Настройка или замена модуля отпечатка", BaseDuration = "1 час", BasePrice = 2200.00M },
-                new Service() { Id = 44, Name = "Замена защитного стекла", Description = "Установка нового защитного стекла", BaseDuration = "15 минут", BasePrice = 500.00M },
-                new Service() { Id = 45, Name = "Чистка микрофона", Description = "Удаление пыли и грязи из микрофона", BaseDuration = "20 минут", BasePrice = 600.00M },
-                new Service() { Id = 46, Name = "Ремонт вибромотора", Description = "Восстановление работы вибромотора", BaseDuration = "40 минут", BasePrice = 1500.00M },
-                new Service() { Id = 47, Name = "Восстановление загрузчика", Description = "Починка или разблокировка загрузчика", BaseDuration = "1 час", BasePrice = 1800.00M },
-                new Service() { Id = 48, Name = "Замена батарейного контакта", Description = "Замена контактов батареи", BaseDuration = "30 минут", BasePrice = 1200.00M },
-                new Service() { Id = 49, Name = "Замена термопасты", Description = "Замена термопасты на процессоре устройства", BaseDuration = "1 час", BasePrice = 2000.00M },
-                new Service() { Id = 50, Name = "Устранение шумов в динамике", Description = "Чистка или ремонт динамика", BaseDuration = "30 минут", BasePrice = 800.00M }
+                new Service() { Id = 40, Name = "Замена передней камеры", Description = "Установка нового модуля фронтальной камеры", BaseDuration = "1 час", BasePrice = 2800.00M }
             );
 
             return modelBuilder;
@@ -76,10 +65,6 @@ namespace MobileRepair.Data
 
             return modelBuilder;
         }
-
-        #endregion
-
-        #region Methods
 
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
@@ -123,7 +108,5 @@ namespace MobileRepair.Data
                 }
             }
         }
-
-        #endregion
     }
 }

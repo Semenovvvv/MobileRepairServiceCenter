@@ -1,17 +1,20 @@
 ﻿@page "/orders"
+@attribute [Authorize(Policy = "Client")]
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @using MobileRepair.Data
 @using MobileRepair.Data.Models
 
 @rendermode InteractiveServer
 
 @inject NavigationManager Navigation
-@inject HttpClient Http
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-<h3>Список заявок на ремонт</h3>
+<h2>Список заявок на ремонт</h2>
+<hr/>
 
 <button class="btn btn-primary mb-3" @onclick="NavigateToOrderPage">Заказать ремонт</button>
 
@@ -45,6 +48,15 @@ else
                     <td>
                         <button class="btn btn-sm btn-primary" @onclick="() => NavigateToOrderDetails(order.Id)">Детали</button>
                     </td>
+                    @switch (order.IsPaid)
+                    {
+                        case false:
+                            <button class="btn btn-success" @onclick="() => PayForOrder(order.Id)">Оплатить</button>
+                            break;
+                        case true:
+                            <p class="text-success">Оплачено</p>
+                            break;
+                    }
                 </tr>
             }
         </tbody>
@@ -98,6 +110,54 @@ else
     private void NavigateToOrderPage()
     {
         Navigation.NavigateTo("/create-order");
+    }
+
+    private async Task PayForOrder(int orderId)
+    {
+        try
+        {
+            await using var dbContext = await DbFactory.CreateDbContextAsync();
+
+            var order = await dbContext.Orders
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                return;
+            }
+
+            if (order.IsPaid)
+            {
+                return;
+            }
+
+            var payment = new Payment
+            {
+                OrderId = order.Id,
+                PaymentDate = DateTime.Now,
+                PaymentMethod = "Онлайн",
+                Price = order.Price
+            };
+
+            dbContext.Payments.Add(payment);
+            order.Status = "Оплачено";
+            order.IsPaid = true;
+
+            await dbContext.SaveChangesAsync();
+
+            // await using (var transaction = await dbContext.Database.BeginTransactionAsync())
+            // {
+                
+
+            //     await transaction.CommitAsync();
+            // }
+            Navigation.Refresh();
+            //await LoadUserOrders();
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     private void NavigateToOrderDetails(int orderId)

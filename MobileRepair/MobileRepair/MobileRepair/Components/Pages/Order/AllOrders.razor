@@ -1,7 +1,8 @@
 ﻿@page "/all-orders"
+@attribute [Authorize(Policy = "Employee")]
 
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
-@using MobileRepair.Constants
 @using MobileRepair.Data
 @using MobileRepair.Data.Models
 
@@ -11,7 +12,8 @@
 @inject HttpClient Http
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<h3>Управление заявками на ремонт</h3>
+<h2>Управление заявками на ремонт</h2>
+<hr/>
 
 @if (isLoading)
 {
@@ -47,17 +49,6 @@ else
                     <td>@order.Device.Client.PhoneNumber</td>
                     <td>@order.Status</td>
                     <td>@order.DateBy.ToShortDateString()</td>
-                    @* <td>
-                        <select @onchange="(e) => UpdateOrderStatus(order, e.Value)">
-                            @foreach (var status in OrderStatusConstants.GetAllStatuses().Select(x => x.Value))
-                            {
-                                <option value="@status" selected="@(order.Status == status)">
-                                    @status
-                                </option>
-                            }
-                        </select>
-                        <button class="btn btn-sm btn-success" @onclick="() => SaveOrderStatus(order)">Сохранить</button>
-                    </td> *@
                     <td>
                         <button class="btn btn-sm btn-primary" @onclick="() => NavigateToOrderDetails(order.Id)">Детали</button>
                     </td>
@@ -81,9 +72,9 @@ else
         {
             await LoadAllOrders();
         }
-        catch (Exception ex)
+        catch
         {
-            // Обработка исключений
+            // ignored
         }
         finally
         {
@@ -93,7 +84,7 @@ else
 
     private async Task LoadAllOrders()
     {
-        using var dbContext = DbFactory.CreateDbContext();
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
 
         allOrders = await dbContext.Orders
             .Include(x => x.Device)

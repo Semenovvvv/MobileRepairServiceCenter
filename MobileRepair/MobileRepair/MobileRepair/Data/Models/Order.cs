@@ -10,5 +10,6 @@
         public string? Descryption {  get; set; }
         public string Status { get; set; }
         public decimal Price {  get; set; }
+        public bool IsPaid { get; set; }
     }
 }
